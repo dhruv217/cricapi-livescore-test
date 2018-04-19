@@ -11,7 +11,7 @@ const args = {
     }
 }
 
-let stat;
+let description;
 let firstRun = true;
 let job = schedule.scheduleJob('*/'+firingRate+' * * * * *', (fireDate) => {
     if (firstRun) {
@@ -19,10 +19,10 @@ let job = schedule.scheduleJob('*/'+firingRate+' * * * * *', (fireDate) => {
         firstRun = false;
     }
     client.get("http://cricapi.com/api/cricketScore/?unique_id=${unique_id}&apikey=${apikey}", args, (data, responce) => {
-        if (stat !== data.stat) {
+        if (description !== data.description) {
             // console.clear(); // Uncomment this if dont want the list;
-            stat = data.stat;
-            console.log(stat);
+            description = data.description;
+            console.log(data.description);
         } 
     });
 });
