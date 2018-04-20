@@ -1,5 +1,6 @@
 const Client = require('node-rest-client').Client;
 const schedule = require('node-schedule');
+const parse = require('xml-parser');
 
 const firingRate = 3;
 
@@ -16,13 +17,16 @@ let firstRun = true;
 let job = schedule.scheduleJob('*/'+firingRate+' * * * * *', (fireDate) => {
     if (firstRun) {
         console.log("firing after "+firingRate+" sec, starting at: ", fireDate);
-        firstRun = false;
+        //firstRun=false;
     }
-    client.get("http://cricapi.com/api/cricketScore/?unique_id=${unique_id}&apikey=${apikey}", args, (data, responce) => {
-        if (description !== data.description) {
+    client.get("http://static.cricinfo.com/rss/livescores.xml", 
+args, async (data, responce) => {
+        if (firstRun) {
             // console.clear(); // Uncomment this if dont want the list;
-            description = data.description;
-            console.log(data.description);
+            // description = data.description;
+		firstRun = false;
+		const xml = parse(data).toString();
+            console.log(xml);
         } 
     });
 });
