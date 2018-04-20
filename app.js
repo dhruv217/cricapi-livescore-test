@@ -42,24 +42,22 @@ let jobCricBuzz = schedule.scheduleJob('*/' + firingRate + ' * * * * *', async (
             let feed = data.mchdata.match;
             for (const match of feed) {
                 // console.log(match)
-                if (match['$'].id === '4') {
-                    if(firstRun) {
+               try {
+		if (match['$'].id === '4') {
                         btTm = match.mscr.btTm;
-                        blgTm = match.mscr.blgTm;
-                        firstRun = false;
-                    } else if (match.mscr.btTm.Inngs['$'].r !== btTm.Inngs['$'].r
-                        || blgTm.Inngs !== undefined ) {
-                        btTm = match.mscr.btTm;
+			blgTm = match.mscr.blgTm;
                         if (blgTm.Inngs === undefined){
                             console.log(btTm['$'].sName+" "+btTm.Inngs['$'].r+"/"+btTm.Inngs['$'].wkts+" * v "+ blgTm['$'].sName);
                         } else {
-                            if (match.mscr.blgTm.Inngs['$'].r !== blgTm.Inngs['$'].r){
-                                blgTm = match.mscr.blgTm;
-                                console.log(btTm['$'].sName + " " + btTm.Inngs['$'].r + "/" + btTm.Inngs['$'].wkts + " v " + blgTm['$'].sName + blgTm.Inngs['$'].r + "/" + blgTm.Inngs['$'].wkts + " *");
-                            }
-                        };
+                            console.log(btTm['$'].sName + " " + btTm.Inngs['$'].r + "/" + 
+					btTm.Inngs['$'].wkts + " * v " + blgTm['$'].sName + 
+					blgTm.Inngs['$'].r + "/" + blgTm.Inngs['$'].wkts);
+			    console.log("Overs : "+btTm.Inngs['$'].ovrs);
                     }
                 }
+		} catch (err) {
+			console.log(err);
+		}
             } 
         });
     });
