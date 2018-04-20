@@ -1,33 +1,66 @@
-const Client = require('node-rest-client').Client;
-const schedule = require('node-schedule');
-const parse = require('xml-parser');
+const Client = require('node-rest-client').Client,
+      schedule = require('node-schedule'),
+      xml2js = require('xml2js');
+let Parser = require('rss-parser');
+let RSSParser = new Parser();
+
+const XMLParser = new xml2js.Parser();
+const client = new Client();
 
 const firingRate = 3;
 
-const client = new Client();
-const args = {
-    path: {
-        unique_id: "1136576",
-        apikey: "qK88b0hgEBPkIk5VHRPExz3Xefw1"
-    }
-}
 
-let description;
+let matchTitle;
 let firstRun = true;
-let job = schedule.scheduleJob('*/'+firingRate+' * * * * *', (fireDate) => {
+let jobESPN = schedule.scheduleJob('*/'+firingRate+' * * * * *', async (fireDate) => {
     if (firstRun) {
-        console.log("firing after "+firingRate+" sec, starting at: ", fireDate);
-        //firstRun=false;
+        console.log("firing after "+firingRate+" sec, starting at: ", fireDate.toLocaleString());
+        firstRun=false;
     }
-    client.get("http://static.cricinfo.com/rss/livescores.xml", 
-args, async (data, responce) => {
-        if (firstRun) {
-            // console.clear(); // Uncomment this if dont want the list;
-            // description = data.description;
-		firstRun = false;
-		const xml = parse(data).toString();
-            console.log(xml);
-        } 
-    });
+    let feed = await RSSParser.parseURL('http://static.cricinfo.com/rss/livescores.xml');
+    // console.log(feed);
+    for (const item of feed.items) {
+        const title = item.title.toString();
+        const regex = /\bChennai|\bSuper|\bKings|\bRajasthan|\bRoyals/igm;
+        // console.log('text serach result :', title.search(regex));
+        if(title.search(regex) > -1 && matchTitle !== title){
+            matchTitle = title;
+            console.log(matchTitle);
+        }
+    }
 });
 
+
+let btTm = { Inngs: { '$': { r: undefined } } },
+    blgTm = { Inngs: { '$': { r: undefined } } };
+let jobCricBuzz = schedule.scheduleJob('*/' + firingRate + ' * * * * *', async (fireDate) => {
+    if (firstRun) {
+        console.log("firing after " + firingRate + " sec, starting at: ", fireDate.toLocaleString());
+    }
+    client.get("http://synd.cricbuzz.com/j2me/1.0/livematches.xml", (data, responce) => {
+        XMLParser.parseString(data, function (err, result) {
+            let feed = data.mchdata.match;
+            for (const match of feed) {
+                // console.log(match)
+                if (match['$'].id === '4') {
+                    if(firstRun) {
+                        btTm = match.mscr.btTm;
+                        blgTm = match.mscr.blgTm;
+                        firstRun = false;
+                    } else if (match.mscr.btTm.Inngs['$'].r !== btTm.Inngs['$'].r
+                        || blgTm.Inngs !== undefined ) {
+                        btTm = match.mscr.btTm;
+                        if (blgTm.Inngs === undefined){
+                            console.log(btTm['$'].sName+" "+btTm.Inngs['$'].r+"/"+btTm.Inngs['$'].wkts+" * v "+ blgTm['$'].sName);
+                        } else {
+                            if (match.mscr.blgTm.Inngs['$'].r !== blgTm.Inngs['$'].r){
+                                blgTm = match.mscr.blgTm;
+                                console.log(btTm['$'].sName + " " + btTm.Inngs['$'].r + "/" + btTm.Inngs['$'].wkts + " v " + blgTm['$'].sName + blgTm.Inngs['$'].r + "/" + blgTm.Inngs['$'].wkts + " *");
+                            }
+                        };
+                    }
+                }
+            } 
+        });
+    });
+});
